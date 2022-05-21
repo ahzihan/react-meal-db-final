@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { addToDb, getStoredCart } from '../../utilities/fakedb';
 import Meal from '../Meal/Meal';
 import OrderList from '../OrderList/OrderList';
 import './Restaurant.css';
@@ -11,7 +12,8 @@ const Restaurant = () => {
         fetch('https://www.themealdb.com/api/json/v1/1/search.php?s=fish')
             .then(res => res.json())
             .then(data => setMeals(data.meals));
-    }, []);
+    }, [] );
+    
     /* 
         The above api link or the below method will now work for search. 
         if you want to implement search in this code. 
@@ -26,7 +28,35 @@ const Restaurant = () => {
         Read carefully, give it a try. [ Ki ache jibone]
         if  you need help, let us know in the support session
     */
-    
+    useEffect( () => {
+        const storedOrder = getStoredCart();
+        const saveOrder = [];
+
+        for ( const id in storedOrder ) {
+            const addedMeal = meals.find( meal => meal.idMeal === id );
+            if ( addedMeal ) {
+                const quantity = storedOrder[ id ];
+                addedMeal.quantity = quantity;
+                saveOrder.push( addedMeal );
+            }
+        }
+        setOrders( saveOrder );
+    },[meals])
+    const handleAddToOrder = ( meal ) => {
+        let newOrders = [];
+        const exists = orders.find( m => m.idMeal === meal.idMeal );
+        if ( exists ) {
+            const rest = orders.filter( m => m.idMeal !== meal.idMeal );
+            exists.quantity = exists.quantity + 1;
+            newOrders = [ ...rest, exists ];
+        } else {
+            meal.quantity = 1;
+            newOrders=[ ...orders, meal ];
+        }
+
+        setOrders( newOrders );
+        addToDb( meal.idMeal );
+    }
 
     return (
         <div className="restaurant-menu">
@@ -34,7 +64,8 @@ const Restaurant = () => {
                 {
                     meals.map(meal => <Meal
                         key={meal.idMeal}
-                        meal={meal}
+                        meal={ meal }
+                        handleAddToOrder={handleAddToOrder}
                     ></Meal>)
                 }
             </div>
